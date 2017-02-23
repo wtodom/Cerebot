@@ -1,0 +1,101 @@
+# ==========================
+# Cerebot configuration file
+# ==========================
+
+# =========================
+# === DCSS IRC settings ===
+[dcss]
+
+# Freenode host and port
+hostname = "irc.freenode.net"
+
+# Set to true to enable SSL support, and change the port field to an
+# ssl-enabled port.
+# use_ssl = true
+# If you register the nick you use for your bot, define this field to have the
+# bot log in with SASL. When using a password, for security reasons you
+# probably want to set `use_ssl = true' above to enable SSL support.
+#username = ""
+#password = ""
+#port = 6697
+
+# If not using ssl, use the default IRC port
+port = 6667
+
+nick = ""
+
+# Chat messages matching these regular expressions anywhere in the message will
+# not be passed on to any IRC bot. You can add regular expression patterns to
+# this array to prevent users from running certain commands. Entries here apply
+# to messages from both WebTiles and Twitch.
+# bad_patterns = []
+
+# Generally you won't want to change any of the remaining settings in the
+# dcss table, unless you want to different irc bots from the official ones.
+
+[[dcss.bots]]
+nick = "Sequell"
+# These are regular expression patterns that Cerebot accepts as prefixes
+# to bot commands in chat. A chat message must match one of these at the
+# _beginning_ of the message to be forwarded to Sequell.
+patterns = ['^\?\?[^?]', '[^?]\?\?\? *$', '^r\?\?', '^\?/', '^![^!]', '^&[^&]', '^\.[^\.]', '^=[^=]']
+has_sequell = true
+has_monster = false
+has_git = false
+
+[[dcss.bots]]
+nick = "Gretell"
+patterns = ['^@\?\??']
+has_sequell = false
+has_monster = true
+has_git = false
+
+[[dcss.bots]]
+nick = "Cheibriados"
+patterns = ['^%git', '^%\?\??', '^%[0-9]+.[0-9]+\?']
+has_sequell = false
+has_monster = true
+has_git = true
+
+
+# ========================
+# === Discord settings ===
+[discord]
+
+username = ""
+token = ""
+
+# The variables command_limit and command_period control the rate of commands
+# (both bot and dcss) allowed in chat. If the condition is reached where the
+# number of commands sent in the last 'command_period' seconds reaches
+# 'command_limit', subsequent commands are ignored until that condition is no
+# longer true.
+command_limit = 15
+command_period = 20
+
+# Send when users issue !<bot-name> help
+help_text = """I'm a bot that sends commands to the DCSS IRC knowledge
+bots. For details, see
+https://github.com/gammafunk/cerebot/blob/master/docs/commands.md """
+
+
+# =============================
+# === Logging Configuration ===
+[logging_config]
+
+# When filename isn't defined, stdout is used.
+# filename = "cerebot.log"
+
+# Limits for the logger when writing to a file. When the limit is reached, a
+# backup file is made up to as many as in 'backup_count'
+# max_bytes = 10000000
+# backup_count = 5
+
+# Log message format
+datefmt = "%Y-%m-%d %H:%M:%S"
+format = "%(asctime)s %(levelname)s: %(message)s"
+
+# Set to 10 to get debugging message, but be warned this generates
+# huge amounts of output.
+# 10 = DEBUG, 20 = INFO, 30 = WARNING, ERROR = 40, CRITICAL = 50
+level = 20
