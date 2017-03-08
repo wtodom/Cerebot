@@ -24,24 +24,32 @@ class DiscordChannel(ChatWatcher):
 
         self.manager = manager
         self.channel = channel
-        self.login_username = None
-        self.bot_chat_link = "Private Message"
-        if self.manager.user:
-            self.login_username = self.manager.user.name
-        if not channel.name or channel.is_private:
-            self.name = channel.id
-        else:
-            self.name = '#' + channel.name
+        self.bot_source_desc = "Private Message"
         self.admins_can_target = False
 
-    def describe_source(self):
-        return "{}:{}".format(self.channel.server.name, self.name)
+    # Set to the bot only if we're in PM, otherwise None.
+    @property
+    def user(self):
+        if self.channel.is_private:
+            return self.login_user
+        else:
+            return None
 
-    def get_username(self, user):
+    @property
+    def login_user(self):
+        return self.manager.user
+
+    def describe(self):
+        channel_name = None
+        if self.channel.is_private or not self.channel.name:
+            channel_name = 'PM:{}'.format(self.channel.id)
+        else:
+            channel_name = '{}:#{}'.format(self.channel.server.name,
+                    self.channel.name)
+        return channel_name
+
+    def get_chat_name(self, user):
         return user.name
-
-    def lookup_nick(self, username):
-        return None
 
     def get_vanity_roles(self):
         if self.channel.is_private:
@@ -77,8 +85,8 @@ class DiscordChannel(ChatWatcher):
     def handle_timeout(self):
         if self.manager.handle_timeout():
             _log.info("%s: Command ignored due to command limit (channel: %s, "
-                      "requester: %s): %s",
-                      self.manager.service, self.name, sender, message)
+                      "requester: %s): %s", self.manager.service,
+                      self.describe(), sender, message)
             return True
 
         return False
@@ -86,7 +94,8 @@ class DiscordChannel(ChatWatcher):
     def get_source_ident(self):
         """Get a unique identifier hash of the discord channel."""
 
-        return {"service" : self.manager.service, "name" : self.channel.id}
+        # Channels are uniquely identified by ID.
+        return {"service" : self.manager.service, "id" : self.channel.id}
 
     @asyncio.coroutine
     def send_chat(self, message, message_type="normal"):
@@ -96,7 +105,6 @@ class DiscordChannel(ChatWatcher):
             message = '```' + message + '```'
         elif self.message_needs_escape(message):
             message = "]" + message
-
         yield from self.manager.send_message(self.channel, message)
 
 
@@ -151,7 +159,9 @@ class DiscordManager(discord.Client):
         self.ping_task = ensure_future(self.start_ping())
 
     def get_source_by_ident(self, source_ident):
-        channel = self.get_channel(source_ident["name"])
+        channel = self.get_channel(source_ident["id"])
+        if not channel:
+            return None
         return DiscordChannel(self, channel)
 
     def user_is_admin(self, user):
@@ -209,7 +219,6 @@ def bot_version_command(source, user):
     report = "Version {}".format(Version)
     manager = source.manager
     yield from source.send_chat(report)
-
 
 @asyncio.coroutine
 def bot_listroles_command(source, user):
