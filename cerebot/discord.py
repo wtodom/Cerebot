@@ -103,6 +103,8 @@ class DiscordChannel(ChatWatcher):
 class DiscordManager(discord.Client):
     def __init__(self, conf, dcss_manager, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.ping_task = None
+        self.shutdown = False
         self.service = "Discord"
         self.conf = conf
         self.single_user = False
@@ -110,6 +112,31 @@ class DiscordManager(discord.Client):
         dcss_manager.managers["Discord"] = self
         self.bot_commands = bot_commands
         self.message_times = []
+
+    def log_exception(self, e, error_msg):
+        error_reason = type(e).__name__
+        if e.args:
+            error_reason = "{}: {}".format(error_reason, e.args[0])
+        _log.error("%s: %s, %s: %s", self.service, error_msg, error_reason)
+
+    @asyncio.coroutine
+    def start_ping(self):
+        while True:
+            if self.is_closed:
+                return
+
+            try:
+                yield from self.ws.ping()
+
+            except asyncio.CancelledError:
+                return
+
+            except Exception as e:
+                self.log_exception(e, "Unable to send ping")
+                yield from self.manager.stop_connection(self)
+                return
+
+            yield from asyncio.sleep(10)
 
     @asyncio.coroutine
     def on_message(self, message):
@@ -121,15 +148,11 @@ class DiscordManager(discord.Client):
 
     @asyncio.coroutine
     def on_ready(self):
-        self.login_username = self.user.name
+        self.ping_task = ensure_future(self.start_ping())
 
     def get_source_by_ident(self, source_ident):
         channel = self.get_channel(source_ident["name"])
         return DiscordChannel(self, channel)
-
-    @asyncio.coroutine
-    def start(self):
-        _log.info("Discord: Starting manager")
 
     def user_is_admin(self, user):
         """Return True if the user is a admin."""
@@ -148,11 +171,15 @@ class DiscordManager(discord.Client):
         yield from self.login(self.conf['token'])
         yield from self.connect()
 
-    def disconnect(self):
+    @asyncio.coroutine
+    def disconnect(self, shutdown=False):
         """Disconnect from Discord. This will log any disconnection error, but
         never raise.
 
         """
+
+        if self.ping_task and not self.ping_task.done():
+            self.ping_task.cancel()
 
         if self.conf.get("fake_connect") or self.is_closed:
             return
@@ -160,10 +187,8 @@ class DiscordManager(discord.Client):
         try:
             yield from self.close()
         except Exception as e:
-            err_reason = type(e).__name__
-            if e.args:
-                err_reason = e.args[0]
-            _log.error("Discord: Error when disconnecting: %s", err_reason)
+            self.log_exception(e, "Error when disconnecting")
+        self.shutdown = shutdown
 
     def handle_timeout(self):
         current_time = time.time()

@@ -53,8 +53,7 @@ class Cerebot:
             sys.exit(1)
 
         self.dcss_manager = DCSSManager(self.conf.dcss)
-        self.discord_manager = DiscordManager(self.conf.discord,
-                                              self.dcss_manager)
+        self.discord_manager = None
 
     def start(self):
         """Start the bot, set up the event loop and signal handlers,
@@ -62,11 +61,11 @@ class Cerebot:
 
         """
 
-        _log.info("Starting Cerebot.")
+        _log.info("Starting bot.")
 
         def do_exit(signame):
             is_error = True if signame == "SIGTERM" else False
-            msg = "Shutting down server due to signal: {}".format(signame)
+            msg = "Shutting down bot due to signal: {}".format(signame)
             if is_error:
                 _log.error(msg)
             else:
@@ -94,37 +93,49 @@ class Cerebot:
 
         """
 
-        _log.info("Stopping Cerebot.")
+        _log.info("Stopping bot.")
         self.shutdown_error = is_error
 
         if self.dcss_task and not self.dcss_task.done():
             self.dcss_task.cancel()
 
         if self.discord_task and not self.discord_task.done():
-            ensure_future(self.discord_manager.disconnect())
+            ensure_future(self.discord_manager.disconnect(True))
 
     @asyncio.coroutine
     def process(self):
-        tasks = []
 
-        self.discord_task = ensure_future(self.discord_manager.start())
-        tasks.append(self.discord_task)
-
+        # This task is never restarted.
         self.dcss_task = ensure_future(self.dcss_manager.start())
-        tasks.append(self.dcss_task)
 
-        yield from asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+        while True:
 
-        self.dcss_manager.disconnect()
-        yield from self.discord_manager.disconnect()
+            # Discord manager initial setup or it is reconnecting.
+            if not self.discord_manager or not self.discord_manager.shutdown:
+                # Let the current task finish.
+                if self.discord_task and not self.discord_task.done():
+                    yield from self.discord_task
 
+                # We re-instantiate the manager and create a new websocket.
+                self.discord_manager = DiscordManager(self.conf.discord,
+                                                      self.dcss_manager)
+                self.discord_task = ensure_future(self.discord_manager.start())
+
+            yield from asyncio.wait([self.dcss_task, self.discord_task],
+                    return_when=asyncio.FIRST_COMPLETED)
+
+            # We are shutting down the bot.
+            if self.dcss_task.done():
+                if self.discord_task and not self.discord_task.done():
+                    yield from self.discord_task
+                return
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument("-c", dest="config_file", metavar="<toml-file>",
                         default=_DEFAULT_CONFIG_FILE,
-                        help="The Cerebot config file.")
+                        help="bot config file.")
     parser.add_argument("--version", action="version", version=version)
     args = parser.parse_args()
 
