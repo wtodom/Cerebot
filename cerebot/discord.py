@@ -145,7 +145,7 @@ class DiscordManager(discord.Client):
         error_reason = type(e).__name__
         if e.args:
             error_reason = "{}: {}".format(error_reason, e.args[0])
-        _log.error("%s: %s, %s: %s", self.service, error_msg, error_reason)
+        _log.error("Discord Error: %s: %s", error_msg, error_reason)
 
     @asyncio.coroutine
     def start_ping(self):
@@ -161,7 +161,7 @@ class DiscordManager(discord.Client):
 
             except Exception as e:
                 self.log_exception(e, "Unable to send ping")
-                yield from self.manager.stop_connection(self)
+                ensure_future(self.disconnect())
                 return
 
             yield from asyncio.sleep(10)
