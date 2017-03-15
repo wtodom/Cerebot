@@ -57,6 +57,9 @@ class DiscordChannel(ChatWatcher):
     def get_chat_name(self, user):
         return user.name
 
+    def get_dcss_nick(self, user):
+        return re.sub('[^A-Za-z0-9_-]', '', user.name)
+
     def get_vanity_roles(self):
         if self.channel.is_private:
             return
