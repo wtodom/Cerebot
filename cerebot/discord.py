@@ -244,9 +244,22 @@ def bot_version_command(source, user):
     yield from source.send_chat(report)
 
 @asyncio.coroutine
+def bot_debugmode_command(source, user, state=None):
+    """!debugmode chat command"""
+
+    if state is None:
+        state_desc = "on" if _log.isEnabledFor(logging.DEBUG) else "off"
+        yield from source.send_chat(
+                "DEBUG level logging is currently {}.".format(state_desc))
+        return
+
+    state_val = "DEBUG" if state == "on" else "INFO"
+    _log.setLevel(state_val)
+    yield from source.send_chat("DEBUG level logging set to {}.".format(state))
+
+@asyncio.coroutine
 def bot_listroles_command(source, user):
     """!listroles chat command"""
-
 
     roles = source.get_vanity_roles()
     if not roles:
@@ -361,6 +374,14 @@ bot_commands = {
         "single_user_allowed" : True,
         "source_restriction" : "admin",
         "function" : bot_version_command,
+    },
+    "debugmode" : {
+        "arg_pattern" : r"(on|off)$",
+        "arg_description" : "[on | off]",
+        "arg_required" : False,
+        "single_user_allowed" : True,
+        "source_restriction" : "admin",
+        "function" : bot_debugmode_command,
     },
     "bothelp" : {
         "arg_pattern" : None,
