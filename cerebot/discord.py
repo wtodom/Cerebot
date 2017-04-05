@@ -10,6 +10,7 @@ from beem.chat import ChatWatcher, bot_help_command
 import discord
 import logging
 import os
+import random
 import re
 import signal
 import time
@@ -436,6 +437,78 @@ def bot_say_command(source, user, server, channel, message):
 
     yield from mgr.send_message(dest_channel, message)
 
+def center_string_in_line(string, line):
+   leftn = int((len(line) - len(string))/2)
+   if len(string) % 2 == 0:
+       leftn += 1
+   rightn = int((len(string) - len(line))/2)
+   if len(string) >= len(line):
+       return string[rightn:leftn]
+   else:
+       return "{}{}{}".format(line[0:leftn], string, line[rightn:])
+
+def render_explosion(lines, radius):
+    newlines = list(lines)
+    explosion = "#" + "#" * 2 * radius
+    for n in range(0, len(lines)):
+        newlines[n] = center_string_in_line(explosion, lines[n])
+
+    return newlines
+
+@asyncio.coroutine
+def bot_firestorm_command(source, user, target=None):
+    """!firestorm chat command"""
+
+    if not target:
+        target = '#' + str(source.channel)
+
+    floor_lines = [
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '...............']
+
+    fire_lines = [
+            '....§§§§§§§....',
+            '....§§§§§§§....',
+            '....§§§§§§§....',
+            '....§§§§§§§....',
+            '....§§§§§§§....',
+            '....§§§§§§§....',
+            '....§§§§§§§....']
+
+    mgr = source.manager
+    mid = int(len(floor_lines) / 2)
+    floor_lines[mid] = center_string_in_line(target, floor_lines[mid])
+
+    message = yield from mgr.send_message(source.channel,
+            '```{}```'.format('\n'.join(floor_lines)))
+    yield from asyncio.sleep(1)
+
+    for r in range(1, 4):
+        explosion = render_explosion(floor_lines, r)
+        message = yield from mgr.edit_message(message,
+             '```{}```'.format('\n'.join(explosion)))
+        yield from asyncio.sleep(0.2)
+
+    yield from asyncio.sleep(0.6)
+    fire_lines[mid] = center_string_in_line(target, fire_lines[mid])
+    for i in range(0, 4):
+        lines = list(fire_lines)
+        for n in range(0, len(fire_lines)):
+            if n == mid:
+                continue
+
+            num = random.randint(1, 4)
+            coords = random.sample(range(0, 7), num)
+            for c in coords:
+                lines[n] = lines[n][:4 + c] + 'v' + lines[n][4 + c + 1:]
+        yield from mgr.edit_message(message,
+                '```{}```'.format('\n'.join(lines)))
+        yield from asyncio.sleep(0.8)
 
 # Discord bot commands
 bot_commands = {
@@ -535,5 +608,16 @@ bot_commands = {
         "single_user_allowed" : True,
         "source_restriction" : None,
         "function" : bot_say_command,
+    },
+    "firestorm" : {
+        "args" : [
+            {
+                "pattern" : r".*",
+                "description" : "target",
+                "required" : False
+            } ],
+        "single_user_allowed" : True,
+        "source_restriction" : "admin",
+        "function" : bot_firestorm_command,
     },
 }
