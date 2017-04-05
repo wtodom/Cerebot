@@ -394,7 +394,7 @@ def bot_say_command(source, user, server, channel, message):
     channels = list(filter(chan_filt, dest_server.channels))
     for c in channels:
         if channel.lower() in c.name.lower():
-            dest_channel = s
+            dest_channel = c
             break
 
     if not dest_channel:
