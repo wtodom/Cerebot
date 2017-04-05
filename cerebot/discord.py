@@ -407,7 +407,7 @@ def bot_say_command(source, user, server, channel, message):
 
 # Discord bot commands
 bot_commands = {
-    "version" : {
+    "botstatus" : {
         "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : "admin",
