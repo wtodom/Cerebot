@@ -31,7 +31,7 @@ class DiscordChannel(ChatWatcher):
         self.manager = manager
         self.channel = channel
         self.bot_source_desc = "Private Message"
-        self.admins_can_target = False
+        self.admin_target_prefix = "^"
 
     # Set to the bot only if we're in PM, otherwise None.
     @property
@@ -237,10 +237,16 @@ class DiscordManager(discord.Client):
 
 @asyncio.coroutine
 def bot_version_command(source, user):
-    """!version chat command"""
+    """!botstatus chat command"""
 
     report = "Version {}".format(Version)
-    manager = source.manager
+    mgr = source.manager
+    names = []
+    for s in mgr.servers:
+        names.append(s.name)
+    names.sort()
+    report = "Version: {}; Listening to servers: {}".format(Version,
+            ", ".join(names))
     yield from source.send_chat(report)
 
 @asyncio.coroutine
@@ -366,79 +372,136 @@ def bot_zxcdance_command(source, user):
             yield from asyncio.sleep(0.25)
     yield from mgr.edit_message(message, figures[0])
 
+@asyncio.coroutine
+def bot_say_command(source, user, server, channel, message):
+    """!say chat command"""
+
+    mgr = source.manager
+    dest_server = None
+    for s in mgr.servers:
+        if server.lower() in s.name.lower():
+            dest_server = s
+            break
+
+    if not dest_server:
+        yield from source.send_chat("Can't find server match for {}, must "
+                "match one of: {}".format(server, ", ".join(
+                    sorted([s.name for s in mgr.servers]))))
+        return
+
+    dest_channel = None
+    chan_filt = lambda c: c.type == discord.ChannelType.text
+    channels = list(filter(chan_filt, dest_server.channels))
+    for c in channels:
+        if channel.lower() in c.name.lower():
+            dest_channel = s
+            break
+
+    if not dest_channel:
+        yield from source.send_chat("Can't find channel match for {}, must "
+                "match one of: {}".format(channel,
+                    ", ".join(sorted([c.name for c in channels]))))
+
+    yield from mgr.send_message(dest_channel, message)
+
+
 # Discord bot commands
 bot_commands = {
     "version" : {
-        "arg_pattern" : None,
-        "arg_description" : None,
+        "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : "admin",
         "function" : bot_version_command,
     },
     "debugmode" : {
-        "arg_pattern" : r"(on|off)$",
-        "arg_description" : "[on | off]",
-        "arg_required" : False,
+        "args" : [
+            {
+                "pattern" : r"(on|off)$",
+                "description" : "on|off",
+                "required" : False
+            } ],
         "single_user_allowed" : True,
         "source_restriction" : "admin",
         "function" : bot_debugmode_command,
     },
     "bothelp" : {
-        "arg_pattern" : None,
-        "arg_description" : None,
+        "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : None,
         "function" : bot_help_command,
     },
     "listroles" : {
-        "arg_pattern" : None,
-        "arg_description" : None,
+        "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : "channel",
         "function" : bot_listroles_command,
     },
     "addrole" : {
-        "arg_pattern" : r".+$",
-        "arg_description" : "ROLE",
-        "arg_required" : True,
+        "args" : [
+            {
+                "pattern" : r".+$",
+                "description" : "ROLE",
+                "required" : True
+            } ],
         "single_user_allowed" : True,
         "source_restriction" : "channel",
         "function" : bot_addrole_command,
     },
     "removerole" : {
-        "arg_pattern" : r".+$",
-        "arg_description" : "ROLE",
-        "arg_required" : True,
+        "args" : [
+            {
+                "pattern" : r".+$",
+                "description" : "ROLE",
+                "required" : True
+            } ],
         "single_user_allowed" : True,
         "source_restriction" : "channel",
         "function" : bot_removerole_command,
     },
     "glasses" : {
-        "arg_pattern" : None,
-        "arg_description" : None,
+        "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : None,
         "function" : bot_glasses_command,
     },
     "deal" : {
-        "arg_pattern" : None,
-        "arg_description" : None,
+        "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : None,
         "function" : bot_deal_command,
     },
     "dance" : {
-        "arg_pattern" : None,
-        "arg_description" : None,
+        "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : None,
         "function" : bot_dance_command,
     },
     "zxcdance" : {
-        "arg_pattern" : None,
-        "arg_description" : None,
+        "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : None,
         "function" : bot_zxcdance_command,
+    },
+    "say" : {
+        "args" : [
+            {
+                "pattern" : r".+$",
+                "description" : "SERVER",
+                "required" : True
+            },
+            {
+                "pattern" : r".+$",
+                "description" : "CHANNEL",
+                "required" : True
+            },
+            {
+                "pattern" : r".+$",
+                "description" : "MESSAGE",
+                "required" : True
+            },
+        ],
+        "single_user_allowed" : True,
+        "source_restriction" : None,
+        "function" : bot_say_command,
     },
 }
