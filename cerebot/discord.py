@@ -280,7 +280,7 @@ def bot_addrole_command(source, user, rolename):
 
     roles = source.get_vanity_roles()
     for r in roles:
-        if rolename != r.name:
+        if rolename.lower() != r.name.lower():
             continue
 
         yield from source.manager.add_roles(user, r)
@@ -296,7 +296,7 @@ def bot_removerole_command(source, user, rolename):
 
     roles = source.get_vanity_roles()
     for r in roles:
-        if rolename != r.name:
+        if rolename.lower() != r.name.lower():
             continue
 
         if r not in user.roles:
