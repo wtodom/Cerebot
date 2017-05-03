@@ -379,9 +379,13 @@ def bot_say_command(source, user, server, channel, message):
     mgr = source.manager
     dest_server = None
     for s in mgr.servers:
-        if server.lower() in s.name.lower():
+        # Give exact matches priority
+        if server.lower() == s.name.lower():
             dest_server = s
             break
+
+        if server.lower() in s.name.lower():
+            dest_server = s
 
     if not dest_server:
         yield from source.send_chat("Can't find server match for {}, must "
@@ -393,9 +397,12 @@ def bot_say_command(source, user, server, channel, message):
     chan_filt = lambda c: c.type == discord.ChannelType.text
     channels = list(filter(chan_filt, dest_server.channels))
     for c in channels:
-        if channel.lower() in c.name.lower():
+        if channel.lower() == c.name.lower():
             dest_channel = c
             break
+
+        elif channel.lower() in c.name.lower():
+            dest_channel = c
 
     if not dest_channel:
         yield from source.send_chat("Can't find channel match for {}, must "
