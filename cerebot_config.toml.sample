@@ -78,6 +78,9 @@ help_text = """I'm a bot that sends commands to the DCSS IRC knowledge
 bots. For details, see
 https://github.com/gammafunk/cerebot/blob/master/docs/commands.md """
 
+# Enable this to set a role named "streaming" when the user goes into streaming
+# mode.
+# set_streaming_role = true
 
 # =============================
 # === Logging Configuration ===

@@ -181,6 +181,27 @@ class DiscordManager(discord.Client):
     def on_ready(self):
         self.ping_task = ensure_future(self.start_ping())
 
+    @asyncio.coroutine
+    def on_member_update(self, before, after):
+        if not self.conf.get("set_streaming_role"):
+            return
+
+        streaming_role = None
+        for r in after.server.roles:
+            if r.name.lower() == "streaming":
+                streaming_role = r
+                break
+
+        if not streaming_role:
+            return
+
+        if (after.game and after.game.type == 1
+                and streaming_role not in after.roles):
+            yield from self.add_roles(after, streaming_role)
+        elif (not after.game or after.game.type != 1
+                and streaming_role in after.roles):
+            yield from self.remove_roles(after, streaming_role)
+
     def get_source_by_ident(self, source_ident):
         channel = self.get_channel(source_ident["id"])
         if not channel:
