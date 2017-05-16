@@ -198,9 +198,13 @@ class DiscordManager(discord.Client):
         if (after.game and after.game.type == 1
                 and streaming_role not in after.roles):
             yield from self.add_roles(after, streaming_role)
-        elif (not after.game or after.game.type != 1
+            _log.info("Gave user %s on server %s streaming role", after,
+                    after.server)
+        elif ((not after.game or after.game.type != 1)
                 and streaming_role in after.roles):
             yield from self.remove_roles(after, streaming_role)
+            _log.info("Removed streaming role for user %s on server %s", after,
+                    after.server)
 
     def get_source_by_ident(self, source_ident):
         channel = self.get_channel(source_ident["id"])
