@@ -510,6 +510,68 @@ def bot_firestorm_command(source, user, target=None):
                 '```{}```'.format('\n'.join(lines)))
         yield from asyncio.sleep(0.8)
 
+def render_glaciate_explosion(lines, radius):
+    newlines = list(lines)
+    explosion = "#" + "#" * 2 * radius
+    mid_n = len(lines) / 2
+    for n in range(1, radius):
+        i = 7 - n
+        explosion = "#" + "#" * 2 * (n - 1)
+        newlines[i] = center_string_in_line(explosion, lines[i])
+
+    return newlines
+
+@asyncio.coroutine
+def bot_glaciate_command(source, user, target=None):
+    """!glaciate chat command"""
+
+    if not target:
+        target = '#' + str(source.channel)
+
+    floor_lines = [
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '...............',
+            '...............']
+
+    ice_lines = [
+            '.§§§§§§§§§§§§§.',
+            '..§§§§§§§§§§§..',
+            '...§§§§§§§§§...',
+            '....§§§§§§§....',
+            '.....§§§§§.....',
+            '......§§§......',
+            '.......§.......']
+
+    mgr = source.manager
+    mid = int(len(floor_lines) / 2)
+    floor_lines[mid] = center_string_in_line(target, floor_lines[mid])
+
+    message = yield from mgr.send_message(source.channel,
+            '```{}```'.format('\n'.join(floor_lines)))
+    yield from asyncio.sleep(1)
+
+    for r in range(1, 8, 2):
+        explosion = render_glaciate_explosion(floor_lines, r)
+        message = yield from mgr.edit_message(message,
+             '```{}```'.format('\n'.join(explosion)))
+        yield from asyncio.sleep(0.2)
+
+    blasted = target
+    if len(target) > 1:
+        block_max = max(1, int(len(target) / 2))
+        num = random.randint(1, block_max)
+        coords = random.sample(range(0, len(target)), num)
+        for c in coords:
+            blasted = blasted[:c] + '8' + blasted[c + 1:]
+
+    ice_lines[mid] = center_string_in_line(blasted, ice_lines[mid])
+    yield from mgr.edit_message(message,
+            '```{}```'.format('\n'.join(ice_lines)))
+
 # Discord bot commands
 bot_commands = {
     "botstatus" : {
@@ -619,5 +681,16 @@ bot_commands = {
         "single_user_allowed" : True,
         "source_restriction" : None,
         "function" : bot_firestorm_command,
+    },
+    "glaciate" : {
+        "args" : [
+            {
+                "pattern" : r".*",
+                "description" : "target",
+                "required" : False
+            } ],
+        "single_user_allowed" : True,
+        "source_restriction" : None,
+        "function" : bot_glaciate_command,
     },
 }
