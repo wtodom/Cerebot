@@ -447,7 +447,7 @@ def center_string_in_line(string, line):
    else:
        return "{}{}{}".format(line[0:leftn], string, line[rightn:])
 
-def render_explosion(lines, radius):
+def render_firestorm_explosion(lines, radius):
     newlines = list(lines)
     explosion = "#" + "#" * 2 * radius
     for n in range(0, len(lines)):
@@ -488,15 +488,15 @@ def bot_firestorm_command(source, user, target=None):
             '```{}```'.format('\n'.join(floor_lines)))
     yield from asyncio.sleep(1)
 
-    for r in range(1, 4):
-        explosion = render_explosion(floor_lines, r)
+    for r in range(1, 5, 2):
+        explosion = render_firestorm_explosion(floor_lines, r)
         message = yield from mgr.edit_message(message,
              '```{}```'.format('\n'.join(explosion)))
         yield from asyncio.sleep(0.2)
 
     yield from asyncio.sleep(0.6)
     fire_lines[mid] = center_string_in_line(target, fire_lines[mid])
-    for i in range(0, 4):
+    for i in range(0, 3):
         lines = list(fire_lines)
         for n in range(0, len(fire_lines)):
             if n == mid:
@@ -617,7 +617,7 @@ bot_commands = {
                 "required" : False
             } ],
         "single_user_allowed" : True,
-        "source_restriction" : "admin",
+        "source_restriction" : None,
         "function" : bot_firestorm_command,
     },
 }
