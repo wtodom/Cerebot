@@ -172,7 +172,9 @@ class DiscordManager(discord.Client):
 
     @asyncio.coroutine
     def on_message(self, message):
-        if not self.is_logged_in:
+        chan = message.channel
+        if (not self.is_logged_in
+           or chan.is_private and not self.user_is_admin(message.author)):
             return
 
         source = DiscordChannel(self, message.channel)
