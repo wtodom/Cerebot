@@ -696,7 +696,7 @@ bot_commands = {
             },
         ],
         "single_user_allowed" : True,
-        "source_restriction" : None,
+        "source_restriction" : "admin",
         "function" : bot_say_command,
     },
     "firestorm" : {
