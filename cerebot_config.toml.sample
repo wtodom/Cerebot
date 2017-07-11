@@ -73,10 +73,8 @@ token = ""
 command_limit = 15
 command_period = 20
 
-# Send when users issue !<bot-name> help
-help_text = """I'm a bot that sends commands to the DCSS IRC knowledge
-bots. For details, see
-https://github.com/gammafunk/cerebot/blob/master/docs/commands.md """
+# Send when users issue !<bot-name> or !help
+help_text = """I'm a chat bot that relays commands to the DCSS IRC knowledge bots Sequell, Gretell, and Cheibriados. See the link in `??beem` for a quick guide to commands for these bots. To see discord-specific bot commands, type `!listcommands`. For help with discord roles, type `??cerebot[2]`."""
 
 # Enable this to set a role named "streaming" when the user goes into streaming
 # mode.
