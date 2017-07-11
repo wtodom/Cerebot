@@ -407,8 +407,8 @@ def bot_dance_command(source, user):
     yield from mgr.edit_message(message, figures[0])
 
 @asyncio.coroutine
-def bot_zxcdance_command(source, user):
-    """!zxcdance chat command"""
+def bot_botdance_command(source, user):
+    """!botdance chat command"""
 
     mgr = source.manager
     figures = ['└[^_^]┐', '┌[^_^]┘']
@@ -671,11 +671,11 @@ bot_commands = {
         "source_restriction" : None,
         "function" : bot_dance_command,
     },
-    "zxcdance" : {
+    "botdance" : {
         "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : None,
-        "function" : bot_zxcdance_command,
+        "function" : bot_botdance_command,
     },
     "say" : {
         "args" : [
