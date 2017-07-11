@@ -264,7 +264,7 @@ class DiscordManager(discord.Client):
 
 
 @asyncio.coroutine
-def bot_version_command(source, user):
+def bot_botstatus_command(source, user):
     """!botstatus chat command"""
 
     report = "Version {}".format(Version)
@@ -580,7 +580,7 @@ bot_commands = {
         "args" : None,
         "single_user_allowed" : True,
         "source_restriction" : "admin",
-        "function" : bot_version_command,
+        "function" : bot_botstatus_command,
     },
     "debugmode" : {
         "args" : [
