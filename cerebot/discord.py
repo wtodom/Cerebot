@@ -264,6 +264,26 @@ class DiscordManager(discord.Client):
 
 
 @asyncio.coroutine
+def bot_listcommands_command(source, user):
+    """!listcommands chat command"""
+
+    commands = []
+    for com in bot_commands.keys():
+        if (bot_commands[com]["source_restriction"] == "admin"
+            and not source.manager.user_is_admin(user)):
+            continue
+
+        if (bot_commands[com]["source_restriction"] == "channel"
+            and source.channel.is_private):
+            continue
+
+        commands.append(source.bot_command_prefix + com)
+
+    commands.sort()
+    yield from source.send_chat("Available commands: {}".format(
+        ', '.join(commands)))
+
+@asyncio.coroutine
 def bot_botstatus_command(source, user):
     """!botstatus chat command"""
 
@@ -576,6 +596,12 @@ def bot_glaciate_command(source, user, target=None):
 
 # Discord bot commands
 bot_commands = {
+    "listcommands" : {
+        "args" : None,
+        "single_user_allowed" : True,
+        "source_restriction" : None,
+        "function" : bot_listcommands_command,
+    },
     "botstatus" : {
         "args" : None,
         "single_user_allowed" : True,
