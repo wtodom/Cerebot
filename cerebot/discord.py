@@ -18,6 +18,7 @@ import time
 from .version import version as Version
 
 _log = logging.getLogger()
+
 _url_regexp = (r'(https?://(?:\S+(?::\S*)?@)?(?:(?:[1-9]\d?|1\d\d|2[01]\d|22'
                r'[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?'
                r'|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]+-?)*'
@@ -107,21 +108,38 @@ class DiscordChannel(ChatWatcher):
         # Channels are uniquely identified by ID.
         return {"service" : self.manager.service, "id" : self.channel.id}
 
+    def filter_markdown(self, message):
+        parts = re.split(_url_regexp, message)
+        result = ""
+        for i, p in enumerate(parts):
+            # URLs parts will always be at an odd index. These are
+            # unmodified. Remove markdown characters from non-urls parts.
+            if not i % 2:
+                for c in "*_~":
+                    p = p.replace(c, "\\" + c)
+            result += p
+
+        return result
+
+    def filter_mentions(self, message):
+        parts = re.split(r'(<@&?[0-9]+>)', message)
+        result = ""
+        for i, p in enumerate(parts):
+            # The mentions will be at an even index.
+            if i % 2:
+                p = p.replace('@', '\\@')
+            result += p
+
+        return result
+
     @asyncio.coroutine
     def send_chat(self, message, message_type="normal"):
         # Clean up any markdown we don't want.
         if message_type == "monster":
             message = message.replace('```', r'\`\`\`')
         else:
-            parts = re.split(_url_regexp, message)
-            message = ""
-            for i, p in enumerate(parts):
-                # URLs parts will always be at an odd index. These are
-                # unmodified. Remove markdown characters from non-urls parts.
-                if not i % 2:
-                    for c in "*_~":
-                        p = p.replace(c, "\\" + c)
-                message += p
+            message = self.filter_markdown(message)
+            message = self.filter_mentions(message)
 
         if message_type == "action":
             message = '_' + message + '_'
